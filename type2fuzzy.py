@@ -2,9 +2,7 @@ import skfuzzy as fuzz
 import numpy as np
 import cudf
 
-def fuzzy2_preprocess(X_gpu, y_gpu, n_terms=2, verbose=False):
- 
-
+def fuzzy2_preprocess(X_gpu, n_terms=2, verbose=False):
     X_np = X_gpu.to_numpy()
     col_names = list(X_gpu.columns)
     new_cols = {}

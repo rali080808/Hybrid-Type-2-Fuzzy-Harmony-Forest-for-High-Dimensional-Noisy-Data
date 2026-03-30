@@ -9,7 +9,7 @@ from sklearn.model_selection import StratifiedKFold
 import random
 import os
 from roughset import *
-from type2fuzyy import fuzzy2_preprocess
+from type2fuzzy import fuzzy2_preprocess
 
 #==============COLOURS========================================
 RED = "\033[31m"
@@ -64,14 +64,15 @@ for RANDOM_SEED in seeds:
     X_cpu = X.to_pandas()
     y_cpu = y.to_pandas()
 
-    features = greedy_reduct(df_cpu, X_cpu.columns.tolist(), _class, max_features=20)
-    X = X[features] # for reduct
+    # features = greedy_reduct(df_cpu, X_cpu.columns.tolist(), _class, max_features=20)
+    # X = X[features] # for reduct
 
     # Data Leakage in StratifiedKFold
-    # TODO - Fuzzy expansion inside the CV loop, only on the training fold, then apply the same transformation to the validation fold. This way the validation data won't influence the fuzzy sets.
-    X = fuzzy2_preprocess(X, y, n_terms=2, verbose=True)
+    # done, now check  - Fuzzy expansion inside the CV loop, only on the training fold, then apply the same transformation to the validation fold. This way the validation data won't influence the fuzzy sets.
+    #X = fuzzy2_preprocess(X, y, n_terms=2, verbose=True)
     
-    noise = 0.4
+
+    noise = 0.0
     addNoise(X, noise)
    
     
@@ -111,8 +112,14 @@ for RANDOM_SEED in seeds:
             y_train = y_gpu.iloc[train_idx]
             y_val = y_gpu.iloc[val_idx]
             
-            clf.fit(X_train, y_train)
-            preds = clf.predict(X_val)
+#   ====================== Fuzzy Type-2 
+            X_train_fuzzy = fuzzy2_preprocess(X_train, n_terms=2, verbose=False)
+            X_val_fuzzy = fuzzy2_preprocess(X_val, n_terms=2, verbose=False)
+            clf.fit(X_train_fuzzy, y_train)
+            preds = clf.predict(X_val_fuzzy)
+            
+            # clf.fit(X_train, y_train)
+            # preds = clf.predict(X_val)
             
             y_val_cpu = y_val.to_numpy()
             preds_cpu = preds.get() if hasattr(preds, 'get') else cp.asnumpy(preds)
@@ -258,5 +265,5 @@ print(json.dumps(results, default=float, indent=2))
 print(f"\nnoise={noise}")
 print(f"name of file: hs_rf_roughset_f2.py")
 print(f"Total seeds processed: {len(results)}")
-print(f"{BG_BRIGHT_GREEN}bez type2fuzzy{RESET}")
+print(f"{BG_BRIGHT_GREEN}with type2fuzzy \n without roughsets{RESET}")
 
