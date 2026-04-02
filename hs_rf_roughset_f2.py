@@ -64,18 +64,15 @@ for RANDOM_SEED in seeds:
     X_cpu = X.to_pandas()
     y_cpu = y.to_pandas()
 
-    # features = greedy_reduct(df_cpu, X_cpu.columns.tolist(), _class, max_features=20)
-    # X = X[features] # for reduct
+  
 
-    # Data Leakage in StratifiedKFold
-    # done, now check  - Fuzzy expansion inside the CV loop, only on the training fold, then apply the same transformation to the validation fold. This way the validation data won't influence the fuzzy sets.
-    #X = fuzzy2_preprocess(X, y, n_terms=2, verbose=True)
-    
-
-    noise = 0.0
+    noise = 0
     addNoise(X, noise)
    
-    
+      # # rough sets
+    features = greedy_reduct(df_cpu, X_cpu.columns.tolist(), _class, max_features=20)
+    X = X[features]  
+
     means = X.mean().to_pandas().round(3)
     stds = X.std().to_pandas().round(3)
     print(f"mean: {means},\n std: {stds}")
@@ -113,13 +110,14 @@ for RANDOM_SEED in seeds:
             y_val = y_gpu.iloc[val_idx]
             
 #   ====================== Fuzzy Type-2 
-            X_train_fuzzy = fuzzy2_preprocess(X_train, n_terms=2, verbose=False)
-            X_val_fuzzy = fuzzy2_preprocess(X_val, n_terms=2, verbose=False)
-            clf.fit(X_train_fuzzy, y_train)
-            preds = clf.predict(X_val_fuzzy)
+            # X_train_fuzzy = fuzzy2_preprocess(X_train, n_terms=2, verbose=False)
+            # X_val_fuzzy = fuzzy2_preprocess(X_val, n_terms=2, verbose=False)
+            # clf.fit(X_train_fuzzy, y_train)
+            # preds = clf.predict(X_val_fuzzy)
             
-            # clf.fit(X_train, y_train)
-            # preds = clf.predict(X_val)
+            # without fuzzy2
+            clf.fit(X_train, y_train)
+            preds = clf.predict(X_val)
             
             y_val_cpu = y_val.to_numpy()
             preds_cpu = preds.get() if hasattr(preds, 'get') else cp.asnumpy(preds)
@@ -152,9 +150,10 @@ for RANDOM_SEED in seeds:
         best = HM[0]
         
         for ite in range(iterations):
-            hmcr = 0.6
-            par = 0.8
-            
+            # hmcr = 0.6
+            # par = 0.8
+            hmcr = 0.7
+            par = 0.3
             new_harmony = []
             for i, (lb, ub, t) in enumerate(var_bounds):
                 if random.random() < hmcr:
@@ -189,7 +188,7 @@ for RANDOM_SEED in seeds:
     best_harmony, best_fitness = harmony_search(
         obj_func=rf_fitness,
         var_bounds=var_bounds,
-        hms=5,
+        hms=10,
         iterations=NI
     )
     
@@ -265,5 +264,5 @@ print(json.dumps(results, default=float, indent=2))
 print(f"\nnoise={noise}")
 print(f"name of file: hs_rf_roughset_f2.py")
 print(f"Total seeds processed: {len(results)}")
-print(f"{BG_BRIGHT_GREEN}with type2fuzzy \n without roughsets{RESET}")
+print(f"{BG_BRIGHT_GREEN}without type2fuzzy uncertainty=0.1 \n with roughsets {RESET}")
 
